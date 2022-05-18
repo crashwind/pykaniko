@@ -3,6 +3,7 @@ import json
 import subprocess
 from enum import Enum
 from typing import List, Optional, AnyStr, Callable
+from base64 import b64encode
 
 
 class KanikoSnapshotMode(Enum):
@@ -275,8 +276,7 @@ class Kaniko(object):
         return {
             'auths': {
                 self.docker_registry_uri: {
-                    'username': self.registry_username,
-                    'password': self.registry_password,
+                    'auth': b64encode(f'{self.registry_username}:{self.registry_password}'.encode('ascii')).decode('ascii')
                 }
             }
         }
@@ -313,7 +313,11 @@ class Kaniko(object):
 
     def _get_shell_part_destination(self, command: List[str]):
         if self.destination:
-            command.append(f'--destination={self.destination}')
+            if isinstance(self.destination, list):
+                for _destination in self.destination:
+                    command.append(f'--destination={_destination}')
+            else:
+                command.append(f'--destination={self.destination}')
 
     def _get_shell_part_digest_file(self, command: List[str]):
         if self.digest_file:
